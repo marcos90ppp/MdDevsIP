@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Painel de Consulta IP</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    /* Reset simples */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #140000;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px 20px;
+      transition: background-color 0.3s, color 0.3s;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    body.light {
+      background-color: #f4f4f4;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    p.subtitle {
+      font-size: 14px;
+      color: #ccc;
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+
+    body.light p.subtitle {
+      color: #555;
+    }
+
+    input {
+      padding: 10px;
+      width: 90%;
+      max-width: 300px;
+      border-radius: 6px;
+      border: none;
+      margin-top: 10px;
+      font-size: 1rem;
+    }
+
+    body.light input {
+      background-color: #fff;
+      color: #222;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 12px 20px;
+      background-color: #cc0000;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      margin-top: 15px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 1rem;
+      width: 90%;
+      max-width: 300px;
+    }
+
+    button:hover {
+      background-color: #a10000;
+    }
+
+    body.light button {
+      background-color: #d33;
+      color: white;
+    }
+
+    body.light button:hover {
+      background-color: #a22;
+    }
+
+    /* Containers centralizados */
+    .container, #loginContainer, #registerContainer, #appContainer {
+      max-width: 400px;
+      width: 100%;
+      margin: 30px auto 0 auto;
+      text-align: center;
+    }
+
+    #appContainer {
+      display: none;
+    }
+
+    .resultado {
+      background-color: #1c0000;
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 8px;
+      display: inline-block;
+      text-align: left;
+      margin-left: auto;
+      margin-right: auto;
+      transition: background-color 0.3s, color 0.3s;
+      max-width: 400px;
+      width: 100%;
+      word-break: break-word;
+    }
+
+    body.light .resultado {
+      background-color: #eee;
+      color: #222;
+    }
+
+    #map {
+      height: 300px;
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto 0 auto;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .resultado p {
+      margin: 6px 0;
+    }
+
+    /* Histórico */
+    #historicoContainer {
+      margin-top: 30px;
+      background-color: #1c0000;
+      padding: 15px 20px;
+      border-radius: 8px;
+      text-align: left;
+      transition: background-color 0.3s, color 0.3s;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    body.light #historicoContainer {
+      background-color: #eee;
+      color: #222;
+    }
+
+    #historicoContainer h2 {
+      margin-top: 0;
+      color: #ff4444;
+    }
+
+    body.light #historicoContainer h2 {
+      color: #a22;
+    }
+
+    #historicoList {
+      list-style: none;
+      padding-left: 0;
+      max-height: 150px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+
+    #historicoList li {
+      padding: 8px 12px;
+      border-bottom: 1px solid #330000;
+      color: #ddd;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      border-radius: 4px;
+      user-select: none;
+    }
+
+    body.light #historicoList li {
+      border-bottom: 1px solid #ccc;
+      color: #333;
+    }
+
+    #historicoList li:hover {
+      background-color: #330000;
+    }
+
+    body.light #historicoList li:hover {
+      background-color: #ccc;
+    }
+
+    #btnLimparHistorico {
+      background-color: #880000;
+      width: 100%;
+      transition: background-color 0.3s;
+      margin-top: 5px;
+    }
+
+    #btnLimparHistorico:hover {
+      background-color: #550000;
+    }
+
+    body.light #btnLimparHistorico {
+      background-color: #a33;
+    }
+
+    body.light #btnLimparHistorico:hover {
+      background-color: #822;
+    }
+
+    /* Bandeira do país */
+    .flag {
+      width: 24px;
+      height: 16px;
+      vertical-align: middle;
+      margin-right: 6px;
+      border: 1px solid #999;
+      border-radius: 2px;
+    }
+
+    /* Toggle dark/light */
+    #toggleTheme {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #444;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 1rem;
+      width: 90%;
+      max-width: 300px;
+    }
+
+    #toggleTheme:hover {
+      background-color: #666;
+    }
+
+    body.light #toggleTheme {
+      background-color: #ccc;
+      color: #222;
+    }
+
+    body.light #toggleTheme:hover {
+      background-color: #aaa;
+    }
+
+    /* Containers login/registro mensagens */
+    .error {
+      color: orange;
+      margin-top: 10px;
+      min-height: 20px;
+      font-weight: bold;
+    }
+    .success {
+      color: lightgreen;
+      margin-top: 10px;
+      min-height: 20px;
+      font-weight: bold;
+    }
+
+    /* Responsividade */
+    @media (max-width: 450px) {
+      body {
+        padding: 20px 10px;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      button, input, #toggleTheme {
+        max-width: 100%;
+      }
+      #map {
+        height: 250px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Registro -->
+  <div id="registerContainer">
+    <h2>Registrar</h2>
+    <input type="text" id="regUser" placeholder="Usuário" autocomplete="username" />
+    <br />
+    <input type="password" id="regPass" placeholder="Senha" autocomplete="new-password" />
+    <br />
+    <button onclick="registrar()">Registrar</button>
+    <p id="regMsg" class="error"></p>
+    <p>
+      Já tem conta?
+      <a href="#" onclick="mostrarLogin(); return false;">Entrar</a>
+    </p>
+  </div>
+
+  <!-- Login -->
+  <div id="loginContainer" style="display:none;">
+    <h2>Login</h2>
+    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username" />
+    <br />
+    <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password" />
+    <br />
+    <button onclick="logar()">Entrar</button>
+    <p id="loginMsg" class="error"></p>
+    <p>
+      Não tem conta?
+      <a href="#" onclick="mostrarRegistro(); return false;">Registrar</a>
+    </p>
+  </div>
+
+  <!-- Painel IP -->
+  <div id="appContainer">
+    <img
+      src="https://media.discordapp.net/attachments/1233881503923179572/1387497682729173112/IMG_3772.jpg?ex=685d8f6a&is=685c3dea&hm=7922f365b0d5b5b59c878634054deb0321a14b3a1b55557d68c1fa3bf582ba40&=&format=webp&width=120&height=120"
+      alt="Logo"
+      style="width: 120px; height: 120px; border-radius: 12px;"
+    /><br />
+
+    <h1>RN VAMPIRO BICHA</h1>
+    <p class="subtitle">RLK MdDevsRBX</p>
+
+    <input type="text" id="ipInput" placeholder="Digite o IP" />
+    <br />
+    <button onclick="consultarIP()">Consultar</button>
+    <br />
+    <button id="toggleTheme">Alternar Modo Claro/Escuro</button>
+    <button onclick="logout()" style="margin-top:15px; background-color:#555;">Sair</button>
+
+    <div class="container">
+      <div id="resultado" class="resultado" style="display:none;"></div>
+      <div id="map"></div>
+
+      <div id="historicoContainer" style="display:none;">
+        <h2>Histórico de consultas</h2>
+        <ul id="historicoList"></ul>
+        <button id="btnLimparHistorico" onclick="limparHistorico()">Limpar Histórico</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Funções para alternar entre containers registro/login/app
+    function mostrarLogin() {
+      document.getElementById("registerContainer").style.display = "none";
+      document.getElementById("loginContainer").style.display = "block";
+      document.getElementById("appContainer").style.display = "none";
+      clearMessages();
+    }
+    function mostrarRegistro() {
+      document.getElementById("loginContainer").style.display = "none";
+      document.getElementById("registerContainer").style.display = "block";
+      document.getElementById("appContainer").style.display = "none";
+      clearMessages();
+    }
+    function mostrarApp() {
+      document.getElementById("registerContainer").style.display = "none";
+      document.getElementById("loginContainer").style.display = "none";
+      document.getElementById("appContainer").style.display = "block";
+      clearMessages();
+    }
+    function clearMessages() {
+      document.getElementById("regMsg").textContent = "";
+      document.getElementById("loginMsg").textContent = "";
+    }
+
+    // Registro simples localStorage (plaintext, só para uso privado)
+    function registrar() {
+      const user = document.getElementById("regUser").value.trim();
+      const pass = document.getElementById("regPass").value.trim();
+      const msg = document.getElementById("regMsg");
+
+      if (!user || !pass) {
+        msg.textContent = "Preencha usuário e senha!";
+        msg.className = "error";
+        return;
+      }
+      if (localStorage.getItem("user_" + user)) {
+        msg.textContent = "Usuário já existe!";
+        msg.className = "error";
+        return;
+      }
+
+      localStorage.setItem("user_" + user, pass);
+      msg.className = "success";
+      msg.textContent = "Registrado com sucesso! Agora faça login.";
+      document.getElementById("regUser").value = "";
+      document.getElementById("regPass").value = "";
+    }
+
+    // Login
+    function logar() {
+      const user = document.getElementById("loginUser").value.trim();
+      const pass = document.getElementById("loginPass").value.trim();
+      const msg = document.getElementById("loginMsg");
+
+      if (!user || !pass) {
+        msg.textContent = "Preencha usuário e senha!";
+        return;
+      }
+
+      const storedPass = localStorage.getItem("user_" + user);
+      if (!storedPass || storedPass !== pass) {
+        msg.textContent = "Usuário ou senha inválidos!";
+        return;
+      }
+
+      // Login bem-sucedido
+      localStorage.setItem("currentUser", user);
+      mostrarApp();
+      carregarTema();
+      carregarHistorico();
+      msg.textContent = "";
+      document.getElementById("loginUser").value = "";
+      document.getElementById("loginPass").value = "";
+    }
+
+    // Logout
+    function logout() {
+      localStorage.removeItem("currentUser");
+      document.getElementById("appContainer").style.display = "none";
+      mostrarLogin();
+    }
+
+    // Verificar login ao abrir a página
+    window.onload = () => {
+      if (localStorage.getItem("currentUser")) {
+        mostrarApp();
+        carregarTema();
+        carregarHistorico();
+      } else {
+        mostrarRegistro();
+      }
+    };
+
+    // Alternar tema claro/escuro e salvar no localStorage por usuário
+    const btnTema = document.getElementById("toggleTheme");
+    btnTema.addEventListener("click", () => {
+      const body = document.body;
+      const user = localStorage.getItem("currentUser");
+      if (!user) return;
+
+      if (body.classList.contains("light")) {
+        body.classList.remove("light");
+        localStorage.setItem(user + "_theme", "dark");
+      } else {
+        body.classList.add("light");
+        localStorage.setItem(user + "_theme", "light");
+      }
+    });
+
+    function carregarTema() {
+      const user = localStorage.getItem("currentUser");
+      if (!user) return;
+
+      const tema = localStorage.getItem(user + "_theme") || "dark";
+      if (tema === "light") {
+        document.body.classList.add("light");
+      } else {
+        document.body.classList.remove("light");
+      }
+    }
+
+    // Histórico de IPs consultados, máximo 10, salvo por usuário
+    function salvarHistorico(ip) {
+      const user = localStorage.getItem("currentUser");
+      if (!user) return;
+
+      let historico = JSON.parse(localStorage.getItem(user + "_historico") || "[]");
+
+      // Evita duplicatas, coloca o mais recente na frente
+      historico = historico.filter((item) => item !== ip);
+      historico.unshift(ip);
+
+      if (historico.length > 10) {
+        historico = historico.slice(0, 10);
+      }
+
+      localStorage.setItem(user + "_historico", JSON.stringify(historico));
+      carregarHistorico();
+    }
+
+    function carregarHistorico() {
+      const user = localStorage.getItem("currentUser");
+      const container = document.getElementById("historicoContainer");
+      const lista = document.getElementById("historicoList");
+      if (!user) return;
+
+      let historico = JSON.parse(localStorage.getItem(user + "_historico") || "[]");
+
+      if (historico.length === 0) {
+        container.style.display = "none";
+        return;
+      }
+
+      lista.innerHTML = "";
+      historico.forEach((ip) => {
+        const li = document.createElement("li");
+        li.textContent = ip;
+        li.title = "Clique para consultar esse IP";
+        li.onclick = () => {
+          document.getElementById("ipInput").value = ip;
+          consultarIP();
+        };
+        lista.appendChild(li);
+      });
+      container.style.display = "block";
+    }
+
+    function limparHistorico() {
+      const user = localStorage.getItem("currentUser");
+      if (!user) return;
+
+      if (confirm("Deseja realmente limpar o histórico?")) {
+        localStorage.removeItem(user + "_historico");
+        carregarHistorico();
+      }
+    }
+
+    // Função para criar a URL da bandeira do país (usando o código countryCode)
+    function criarFlag(countryCode) {
+      if (!countryCode) return "";
+      return `https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
+    }
+
+    // Consulta IP usando API ip-api.com e atualiza resultado e mapa
+    let map, marker;
+
+    function consultarIP() {
+      const ip = document.getElementById("ipInput").value.trim();
+      const res = document.getElementById("resultado");
+      if (!ip) {
+        res.style.display = "block";
+        res.textContent = "Por favor, digite um IP válido.";
+        return;
+      }
+
+      res.style.display = "block";
+      res.textContent = "Consultando...";
+
+      fetch(`http://ip-api.com/json/${ip}?lang=pt_br`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "fail") {
+            res.textContent = "Erro na consulta: " + data.message;
+            esconderMapa();
+            return;
+          }
+
+          salvarHistorico(ip);
+
+          // Montar o resultado com a bandeira
+          const flagUrl = criarFlag(data.countryCode);
+
+          let html = `<p><strong>IP:</strong> ${data.query}</p>`;
+          html += `<p><strong>Localização:</strong> ${data.city || "Desconhecido"}, ${
+            data.regionName || "Desconhecido"
+          }, ${data.country || "Desconhecido"} ${
+            flagUrl ? `<img src="${flagUrl}" alt="Bandeira" class="flag" />` : ""
+          }</p>`;
+          html += `<p><strong>Provedor:</strong> ${data.isp || "Desconhecido"}</p>`;
+          html += `<p><strong>Fuso horário:</strong> ${data.timezone || "Desconhecido"}</p>`;
+          html += `<p><strong>Latitude:</strong> ${data.lat}</p>`;
+          html += `<p><strong>Longitude:</strong> ${data.lon}</p>`;
+
+          res.innerHTML = html;
+
+          // Mostrar mapa com marcador na localização
+          mostrarMapa(data.lat, data.lon);
+        })
+        .catch(() => {
+          res.textContent = "Erro na consulta.";
+          esconderMapa();
+        });
+    }
+
+    function mostrarMapa(lat, lon) {
+      const mapDiv = document.getElementById("map");
+      mapDiv.style.display = "block";
+
+      if (!map) {
+        map = L.map("map").setView([lat, lon], 13);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution:
+            '© OpenStreetMap contributors',
+        }).addTo(map);
+
+        marker = L.marker([lat, lon]).addTo(map);
+      } else {
+        map.setView([lat, lon], 13);
+        marker.setLatLng([lat, lon]);
+      }
+    }
+
+    function esconderMapa() {
+      const mapDiv = document.getElementById("map");
+      mapDiv.style.display = "none";
+    }
+  </script>
+</body>
+</html>
